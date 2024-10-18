@@ -24,7 +24,7 @@ function Add-LogMessage{
     #>
 }
 
-$Applications = Get-ChildItem -Path C:\Temp\prep\apps -Include "*.exe","*.msi","*.msix" 
+$Applications = Get-ChildItem -Path C:\Temp\prep\apps | Where-Object{$_.Name -match 'msi|exe'}
 $InstallInstructions = "C:\Temp\prep\apps\Setup.csv"
 
 if($ApplicationInstall){
