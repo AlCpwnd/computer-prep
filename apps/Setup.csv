@@ -1,3 +1,4 @@
 "Application","Command","InstallTest"
 "FortiClientVPN.exe","-passive","C:\Program Files\Fortinet\FortiClient\FortiClient.exe"
-"Setup64.msi","/qn","C:\Program Files\Program\Run.exe"
+"Setup.exe","/download .\Configuration.xml","C:\Temp\prep\apps\Office"
+"Setup.exe","/configure .\Configuration.xml","C:\Program Files\Microsoft Office\root\Office16\*.exe"
