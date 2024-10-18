@@ -1,8 +1,8 @@
 {
-	"WindowsUpdate":true,
-	"BloatwareRemoval":true,
+	"WindowsUpdate":false,
+	"BloatwareRemoval":false,
 	"ComputerRename": {
-		"Run":true,
+		"Run":false,
 		"NewName": ""
 	},
 	"UserSettings": {
@@ -88,7 +88,7 @@
 		"PublicDesktopCleanup":true,
 		"LogBackup":true,
 		"StartupScriptRemoval":true,
-		"EnableUA":true,
-		"ScriptFolderRemoval":true
+		"EnableUA":false,
+		"ScriptFolderRemoval":false
 	}
 }
