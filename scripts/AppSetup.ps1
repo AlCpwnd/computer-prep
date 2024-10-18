@@ -37,23 +37,34 @@ if($ApplicationInstall){
     # Recovers application installation commands.
     $Commands = Import-Csv -Path $InstallInstructions
 
-    foreach($Application in $Applications){
-        # Verifies there has already been an attempt at installing the application
-        # or if the application is already installed.
-        if($Logs -like "*Installing*$($Application.Name)*" -or (Test-Path -Path $Application.InstallTest)){
-            Continue
+    foreach($Application in $Applications){        
+        # Recovers the installation structions from the setup CSV
+        # if they exist.
+        if($Commands.Application -contains $Application.Name){
+            $Installer = $Commands[$Commands.Application.IndexOf($Application.Name)]
         }else{
-            # Verifies if the found application has an installation command.
-            $InstallCommand = ($Commands | Where-Object($_.application -eq $Application.Name)).Command
-            if($InstallCommand){
-                "Installing (Automatic) $($Application.Name) $InstallCommand" | Add-LogMessage $LogFile
-                Start-Process -FilePath $Application.FullName -ArgumentList $InstallCommand -Verb RunAs -Wait -OutVariable InstallResult
+            $Installer = $null
+        }
+        
+        if(-not $Installer){
+            # Checks if the installation of the application was already attempted.
+            $LogCheck = $Logs | Where-Object{$_ -like "*Installing*$($Application.Name)*"}
+            if($LogCheck){
+                Continue
+            }
+            # If no instructions are found, runs the installer manually.
+            "Installing (Manual) $($Application.Name)" | Add-LogMessage $LogFile
+            Start-Process -FilePath $Application.FullName -Verb RunAs -Wait
+        }else{
+            # Checks if the application was already installed using the install test string.
+            if(Test-Path -Path $Installer.InstallTest){
+                Continue
+            }else{
+                "Installing (Automatic) $($Application.Name) $($Installer.Command)" | Add-LogMessage $LogFile
+                Start-Process -FilePath $Application.FullName -ArgumentList $Installer.Command -Verb RunAs -Wait -OutVariable InstallResult
                 if($InstallResult){
                     $InstallResult | ForEach-Object("`t$_" | Add-LogMessage $LogFile)
                 }
-            }else{
-                "Installing (Manual) $($Application.Name)" | Add-LogMessage $LogFile
-                Start-Process -FilePath $Application.FullName -Verb RunAs -Wait
             }
         }
     }
