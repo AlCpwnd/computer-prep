@@ -25,10 +25,15 @@ function Add-LogMessage{
     #>
 }
 
-$Applications = Get-ChildItem -Path C:\Temp\prep\apps | Where-Object{$_.Name -match 'msi|exe'}
-$InstallInstructions = "C:\Temp\prep\apps\Setup.csv"
+$AppFolder = "C:\Temp\prep\apps"
 
-if($ApplicationInstall){
+$Applications = Get-ChildItem -Path $AppFolder | Where-Object{$_.Name -match 'msi|exe'}
+$InstallInstructions = "$AppFolder\Setup.csv"
+
+if($Applications){
+    # Moves the script run location to the folder.
+    Push-Location -Path $AppFolder
+
     # Documents the application install start time.
     "[AppSetup Start]" | Add-LogMessage $LogFile
     
@@ -38,35 +43,42 @@ if($ApplicationInstall){
     # Recovers application installation commands.
     $Commands = Import-Csv -Path $InstallInstructions
 
-    foreach($Application in $Applications){        
-        # Recovers the installation structions from the setup CSV
-        # if they exist.
-        if($Commands.Application -contains $Application.Name){
-            $Installer = $Commands[$Commands.Application.IndexOf($Application.Name)]
-        }else{
-            $Installer = $null
+    foreach($App in $Applications){       
+        # Adds undocumented apps to the Commands variable. 
+        if($Commands.Application -notcontains $App.Name){
+            $Commands += @{
+                Application = $App.Name
+                Command = ''
+                InstallTest = ''
+            }
         }
-        
-        if(-not $Installer){
-            # Checks if the installation of the application was already attempted.
-            $LogCheck = $Logs | Where-Object{$_ -like "*Installing*$($Application.Name)*"}
+    }
+
+    foreach($App in $Commands){
+        # Checks if application is installed. Depending on if
+        # a test is given or not.
+        if($App.InstallTest){            
+            if(Test-Path -Path $App.InstallTest){
+                Continue
+            }
+        }else{
+            $LogCheck = $Logs | Where-Object{$_ -like "*Installing*$($App.Name)*"}
             if($LogCheck){
                 Continue
             }
-            # If no instructions are found, runs the installer manually.
-            "Installing (Manual) $($Application.Name)" | Add-LogMessage $LogFile
-            Start-Process -FilePath $Application.FullName -Verb RunAs -Wait
-        }else{
-            # Checks if the application was already installed using the install test string.
-            if(Test-Path -Path $Installer.InstallTest){
-                Continue
-            }else{
-                "Installing (Automatic) $($Application.Name) $($Installer.Command)" | Add-LogMessage $LogFile
-                Start-Process -FilePath $Application.FullName -ArgumentList $Installer.Command -Verb RunAs -Wait -OutVariable InstallResult
-                if($InstallResult){
-                    $InstallResult | ForEach-Object("`t$_" | Add-LogMessage $LogFile)
-                }
+        }
+
+        # Install the application depending if instructions are
+        # given or not.
+        if($App.Command){
+            "Installing (Automatic) $($App.Name) $($App.Command)" | Add-LogMessage $LogFile
+            Start-Process -FilePath $App.FullName -ArgumentList $App.Command -Verb RunAs -Wait -OutVariable InstallResult
+            if($InstallResult){
+                $InstallResult | ForEach-Object("`t$_" | Add-LogMessage $LogFile)
             }
+        }else{
+            "Installing (Manual) $($App.Name)" | Add-LogMessage $LogFile
+            Start-Process -FilePath $App.FullName -Verb RunAs -Wait
         }
     }
 
