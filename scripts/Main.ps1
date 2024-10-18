@@ -230,16 +230,11 @@ if($Config.LocalAdminPassword -and -not $LocalAdminPasswordCheck){
     "Password documentation file created" | Add-LogMessage $LogPath
     # Verifies if the source disk is avilable.
     $Origin = ($LogFile | Where-Object{$_ -match "SourceLocation="}).Split('=')[1]
+    $Origin = $Origin.Substring(0,($Origin.Length)) # Removes trailing '\'
     if(Test-Path -Path $Origin){
         # Copies the password file to the source disk.
         Copy-Item -Path $PswFile -Destination $Origin
         "Password file copied to source directory" | Add-LogMessage $LogPath
-    }else{
-        # Source disk cannot be found stores the password
-        # documentation file on the desktop.
-        Copy-Item -Path $PswFile -Destination "$Env:USERPROFILE\Desktop"
-        "Source disk could not be reached." | Add-LogMessage $LogPath
-        "Password file stored on the user's desktop." | Add-LogMessage $LogPath
     }
     # Creates a script to change the current user's password
     # and stores it on the desktop.
